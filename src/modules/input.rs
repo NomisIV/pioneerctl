@@ -1,12 +1,12 @@
-use super::{Module, Zone, Zoned};
+use super::super::log;
+use super::Opt;
+use super::{Module, Modules};
+use super::{Zone, Zoned};
 
 pub struct InputModule;
 
 impl InputModule {
-    pub fn new() -> Self {
-        InputModule
-    }
-
+    // TODO: Convert these to FromStr to a Source enum?
     pub fn match_source(source: &str) -> String {
         format!(
             "{:0>2}",
@@ -72,36 +72,33 @@ impl InputModule {
 }
 
 impl Module for InputModule {
-    fn match_command(&self, cmd: &Vec<String>, zone: &Zone) -> Option<String> {
-        if cmd.get(0).unwrap().as_str() != "input" {
-            return None;
-        }
+    fn parse_command(opt: &Opt) -> String {
+        let code = InputModule::get_code(&opt.zone);
 
-        let code = InputModule::get_code(zone);
-
-        let cmd = match cmd.get(1).unwrap().as_str() {
-            "next" => format!("{}U", code),
-            "prev" => format!("{}D", code),
-            "set" => match zone {
-                Zone::Main => {
-                    let source = InputModule::match_source(cmd.get(2).unwrap().as_str());
-
-                    format!("{}{}N", source, code)
-                },
-                Zone::HDZone => {
-                    let source = InputModule::match_source_zoned(cmd.get(2).unwrap().as_str());
-
-                    format!("{}{}A", source, code)
-                }
-                _ => {
-                    let source = InputModule::match_source_zoned(cmd.get(2).unwrap().as_str());
-
-                    format!("{}{}", source, code)
-                }
-            },
+        match opt.cmd {
+            Some(Modules::Input(InputOpt::Next)) => format!("{}U", code),
+            Some(Modules::Input(InputOpt::Prev)) => format!("{}D", code),
+            // TODO
+            // Some(Modules::Input(InputOpt::Set { .. })) => match &opt.zone {
+            //     Zone::Main => {
+            //         let source = InputModule::match_source(opt.cmd.unwrap().);
+            //
+            //         format!("{}{}N", source, code)
+            //     }
+            //     Zone::HDZone => {
+            //         let source = InputModule::match_source_zoned(cmd.get(2).unwrap().as_str());
+            //
+            //         format!("{}{}A", source, code)
+            //     }
+            //     _ => {
+            //         let source = InputModule::match_source_zoned(cmd.get(2).unwrap().as_str());
+            //
+            //         format!("{}{}", source, code)
+            //     }
+            // },
+            Some(Modules::Input(InputOpt::Query)) => format!("?{}", &code),
             _ => format!("?{}", &code),
-        };
-        Some(cmd)
+        }
     }
 
     fn on_response(&self, code: &str) {
@@ -121,4 +118,14 @@ impl Zoned for InputModule {
         }
         .to_string()
     }
+}
+
+use structopt::StructOpt;
+
+#[derive(Debug, StructOpt)]
+pub enum InputOpt {
+    Next,
+    Prev,
+    Set { source: String },
+    Query,
 }

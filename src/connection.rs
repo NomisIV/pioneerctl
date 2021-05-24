@@ -12,7 +12,7 @@ impl Connection {
     }
 
     pub fn send_command(mut self, cmd: &str) {
-        // self.stream.write(format!("{}\r", cmd).as_bytes());
-        println!("{}", cmd);
+        self.stream.write(format!("{}\r", cmd).as_bytes());
+        // println!("{}", cmd);
     }
 }

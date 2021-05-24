@@ -7,5 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# structopt = "0.3.0"
-clap = "2.33.3"
+structopt = "0.3" # For commandline interface
+rustyline = "8.0" # For readline?
+toml_edit = "0.2"
+

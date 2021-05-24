@@ -1,26 +1,20 @@
-use crate::{log, modules::Module, modules::Zoned, Zone};
+use super::super::log;
+use super::Opt;
+use super::{Module, Modules};
+use super::{Zone, Zoned};
 
 pub struct MuteModule;
 
-impl MuteModule {
-    pub fn new() -> Self {
-        MuteModule
-    }
-}
-
 impl Module for MuteModule {
-    fn match_command(&self, cmd: &Vec<String>, zone: &Zone) -> Option<String> {
-        if cmd.get(0).unwrap().as_str() != "mute" {
-            return None;
-        }
+    fn parse_command(opt: &Opt) -> String {
+        let code = MuteModule::get_code(&opt.zone);
 
-        let code = MuteModule::get_code(&zone);
-
-        match cmd.get(1).unwrap().as_str() {
-            "on" => Some(format!("{}O", &code)),
-            "off" => Some(format!("{}F", &code)),
-            "toggle" => Some(format!("{}Z", &code)),
-            _ => Some(format!("?{}", &code)),
+        match opt.cmd {
+            Some(Modules::Mute(MuteOpt::On)) => format!("{}O", &code),
+            Some(Modules::Mute(MuteOpt::Off)) => format!("{}F", &code),
+            Some(Modules::Mute(MuteOpt::Toggle)) => format!("{}Z", &code),
+            Some(Modules::Mute(MuteOpt::Query)) => format!("?{}", &code),
+            _ => "".into(), // FIXME
         }
     }
 
@@ -43,4 +37,21 @@ impl Zoned for MuteModule {
         }
         .to_string()
     }
+}
+
+use structopt::StructOpt;
+
+#[derive(Debug, StructOpt)]
+pub enum MuteOpt {
+    /// Mutes the reciever
+    On,
+
+    /// Unmutes the reciever
+    Off,
+
+    /// Toggles mute state on the reciever
+    Toggle,
+
+    /// Queries the mute state of the reciever
+    Query,
 }

@@ -1,26 +1,20 @@
-use crate::{log, modules::Module, modules::Zoned, Zone};
+use super::super::log;
+use super::Opt;
+use super::{Module, Modules};
+use super::{Zone, Zoned};
 
 pub struct PowerModule;
 
-impl PowerModule {
-    pub fn new() -> Self {
-        PowerModule
-    }
-}
-
 impl Module for PowerModule {
-    fn match_command(&self, cmd: &Vec<String>, zone: &Zone) -> Option<String> {
-        if cmd.get(0).unwrap().as_str() != "power" {
-            return None;
-        }
+    fn parse_command(opt: &Opt) -> String {
+        let code = PowerModule::get_code(&opt.zone);
 
-        let code = PowerModule::get_code(&zone);
-
-        match cmd.get(1).unwrap().as_str() {
-            "on" => Some(format!("{}O", &code)),
-            "off" => Some(format!("{}F", &code)),
-            "toggle" => Some(format!("{}Z", &code)),
-            _ => Some(format!("?{}", &code)),
+        match opt.cmd {
+            Some(Modules::Power(PowerOpt::On)) => format!("{}O", &code),
+            Some(Modules::Power(PowerOpt::Off)) => format!("{}F", &code),
+            Some(Modules::Power(PowerOpt::Toggle)) => format!("{}Z", &code),
+            Some(Modules::Power(PowerOpt::Query)) => format!("?{}", &code),
+            _ => "".into(), // FIXME
         }
     }
 
@@ -43,4 +37,21 @@ impl Zoned for PowerModule {
         }
         .to_string()
     }
+}
+
+use structopt::StructOpt;
+
+#[derive(Debug, StructOpt)]
+pub enum PowerOpt {
+    /// Turns the reciever on
+    On,
+
+    /// Turns the reciever off
+    Off,
+
+    /// Toggles the power state of the reciever
+    Toggle,
+
+    /// Queries the power state of the reciever
+    Query,
 }

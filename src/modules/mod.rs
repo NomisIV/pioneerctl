@@ -3,10 +3,10 @@ mod mute;
 mod power;
 mod volume;
 
-use crate::Zone;
+use super::zone::Zone;
 
 pub trait Module {
-    fn match_command(&self, cmd: &Vec<String>, zone: &Zone) -> Option<String>;
+    fn parse_command(opt: &Opt) -> String;
     fn on_response(&self, code: &str);
 }
 
@@ -14,13 +14,23 @@ trait Zoned {
     fn get_code(zone: &Zone) -> String;
 }
 
-pub fn init_modules() -> Vec<Box<dyn Module>> {
-    let mut vec: Vec<Box<dyn Module>> = Vec::new();
+use super::Opt;
+use structopt::StructOpt;
 
-    vec.push(Box::new(power::PowerModule::new()));
-    vec.push(Box::new(volume::VolumeModule::new()));
-    vec.push(Box::new(mute::MuteModule::new()));
-    vec.push(Box::new(input::InputModule::new()));
+#[derive(Debug, StructOpt)]
+pub enum Modules {
+    Power(power::PowerOpt),
+    Volume(volume::VolumeOpt),
+    Mute(mute::MuteOpt),
+    Input(input::InputOpt),
+}
 
-    return vec;
+pub fn parse_command(opt: &Opt) -> Option<String> {
+    match opt.cmd {
+        Some(Modules::Power(..)) => Some(power::PowerModule::parse_command(opt)),
+        Some(Modules::Input(..)) => Some(input::InputModule::parse_command(opt)),
+        Some(Modules::Mute(..)) => Some(mute::MuteModule::parse_command(opt)),
+        Some(Modules::Volume(..)) => Some(volume::VolumeModule::parse_command(opt)),
+        _ => None,
+    }
 }
