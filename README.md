@@ -50,7 +50,7 @@ $ pioneerctl --zone zone2 mute on
 (Mute only zone2)
 ```
 
-If an ip-address isn't specified in the comamnd, a configuration file must be used.
+If an ip-address isn't specified in the command, a configuration file must be used.
 It is expected to be located at `$XDG_CONFIG_HOME/pioneerctl/config.toml`,
 but this can be overridden with the `--config` flag.
 
@@ -69,3 +69,10 @@ sudo cp target/release/pioneerctl /bin/pioneerctl
 However, this requires you to have a working cargo environment.
 
 In the future I will probably publish binaries with each update.
+
+## Contributing
+
+Contributions are very welcome,
+and I recommend taking a look at
+[this official specification for the protocol](https://github.com/NomisIV/pioneerctl/blob/master/Pioneer_AVR_FY16_CIAMX.xlsx)
+to get started.
