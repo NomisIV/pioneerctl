@@ -1,12 +1,16 @@
-use std::{fs, path::PathBuf};
+use colored::*;
+use die_exit::*;
+use rustyline::{error::ReadlineError, Editor};
+use std::{
+    io::{prelude::*, BufReader},
+    net::TcpStream,
+    path::PathBuf,
+    process::exit,
+};
 use structopt::StructOpt;
-use toml_edit::Document;
-
-mod connection;
-use connection::Connection;
 
 mod zone;
-use zone::Zone;
+// use zone::Zone;
 
 mod modules;
 use modules::{parse_command, Modules};
@@ -21,75 +25,103 @@ pub struct Opt {
     #[structopt(short, long)]
     silent: bool,
 
-    /// Config file
-    #[structopt(
-        short,
-        long,
-        parse(from_os_str),
-        // default_value = "$XDG_CONFIG_HOME/pioneerctl/config.toml"
-        default_value = "/home/simon/.config/pioneerctl/config.toml"
-    )]
-    config: PathBuf,
-
     /// IP address (overrides config)
-    #[structopt(short = "a", long)]
+    #[structopt(short = "a", long, env = "PIONEERCTL_ADDRESS")]
     ip_address: Option<String>,
-
-    /// Zone
-    #[structopt(short, long, default_value = "main")]
-    zone: Zone,
 
     #[structopt(subcommand)]
     cmd: Option<Modules>,
+}
+
+fn send_code(stream: &mut TcpStream, code: &str) {
+    stream
+        .write(format!("{}\r\n", code).as_bytes())
+        .die("Expected to send the command successfully");
 }
 
 fn main() {
     // Read command line arguments
     let opt = Opt::from_args();
 
-    // Read configuration file
-    if opt.debug {
-        println!("Path to config file: {}", opt.config.to_str().unwrap());
-    }
-    let cfg_raw = fs::read_to_string(&opt.config).expect("Could not read config file");
-    let cfg = cfg_raw.parse::<Document>().expect("Bad config file");
-
-    // Read ip address from config file
-    let ip_address = match opt.ip_address {
-        Some(..) => opt.ip_address.clone().unwrap(),
-        None => format!(
-            "{}:{}",
-            cfg["reciever"]["ip_address"]
-                .as_str()
-                .expect("No address to reciever")
-                .to_string(),
-            cfg["reciever"]["port"]
-                .as_integer()
-                .expect("No port to reciever")
-                .to_string(),
-        ),
-    };
-
-    // Parse command
-    let code = parse_command(&opt);
-
-    if code.is_none() {
-        println!("No command, exiting");
-        return;
-    }
-
     // Set up connection
-    if opt.debug {
-        println!("Connecting to address: {}", ip_address);
+    let mut stream = TcpStream::connect(&opt.ip_address.die("No IP address configured"))
+        .die("Could not connect to the reciever");
+
+    // Command supplied, execute it
+    if opt.cmd.is_some() {
+        // Parse command
+        let code = parse_command(&opt.cmd.unwrap());
+
+        // Send command
+        send_code(&mut stream, &code);
+
+        // Print response
+        // TODO: Parse response
+        loop {
+            let mut data = Vec::new();
+            BufReader::new(&stream)
+                .read_until(b'\r', &mut data)
+                .die("Could not listen");
+            println!("{}", String::from_utf8_lossy(&data));
+        }
+
+        // Do nothing more
+        // return;
     }
-    let con = Connection::new(&ip_address);
 
-    // Send command
-    con.send_command(code.unwrap().as_str());
+    // Enter REPL-interface
+    let mut rl = Editor::<()>::new();
+    let history_path = PathBuf::from("/home/simon/.local/share/pioneerctl/history"); // FIXME: change path
 
-    // Print response
-}
+    if rl.load_history(&history_path).is_err() {
+        // TODO: Create history file
+    }
 
-pub fn log(message: &str) {
-    println!("{}", message)
+    loop {
+        // Read
+        let readline = rl.readline(&format!("{} $ ", "pioneerctl".bold().purple()));
+        match readline {
+            Ok(line) => {
+                match line.as_str() {
+                    "" => continue,
+                    "exit" => break,
+                    _ => {
+                        // Add the line to the history
+                        rl.add_history_entry(line.as_str());
+
+                        // Split the line at whitespace
+                        let mut module_vec = line.split(" ").collect::<Vec<&str>>();
+
+                        // The first word is supposed to be the program
+                        module_vec.insert(0, "pioneerctl");
+
+                        // Generate the command with structopt
+                        let cmd = Modules::from_iter_safe(module_vec);
+
+                        if cmd.is_err() {
+                            println!("\n{}\n", cmd.unwrap_err().message);
+                            continue;
+                        }
+
+                        // Get the code for the current command
+                        let code = parse_command(&cmd.unwrap());
+
+                        send_code(&mut stream, &code);
+
+                        // TODO: Print response
+                    }
+                }
+            }
+
+            Err(ReadlineError::Interrupted) => break,
+
+            Err(ReadlineError::Eof) => break,
+
+            Err(err) => {
+                println!("REPL ERROR: {:?}", err);
+                exit(1);
+            }
+        }
+    }
+    //rl.save_history(&history_path).unwrap() // FIXME
 }

@@ -1,45 +1,7 @@
-use super::super::log;
-use super::Opt;
-use super::{Module, Modules};
-use super::{Zone, Zoned};
-
-pub struct PowerModule;
-
-impl Module for PowerModule {
-    fn parse_command(opt: &Opt) -> String {
-        let code = PowerModule::get_code(&opt.zone);
-
-        match opt.cmd {
-            Some(Modules::Power(PowerOpt::On)) => format!("{}O", &code),
-            Some(Modules::Power(PowerOpt::Off)) => format!("{}F", &code),
-            Some(Modules::Power(PowerOpt::Toggle)) => format!("{}Z", &code),
-            Some(Modules::Power(PowerOpt::Query)) => format!("?{}", &code),
-            _ => "".into(), // FIXME
-        }
-    }
-
-    fn on_response(&self, code: &str) {
-        match code {
-            "PWR1" => log("Power off"),
-            "PWR0" => log("Power on"),
-            _ => (),
-        }
-    }
-}
-
-impl Zoned for PowerModule {
-    fn get_code(zone: &Zone) -> String {
-        match zone {
-            Zone::Main => "P",
-            Zone::Zone2 => "AP",
-            Zone::Zone3 => "BP",
-            Zone::HDZone => "ZE",
-        }
-        .to_string()
-    }
-}
-
 use structopt::StructOpt;
+
+use super::Module;
+use super::{Zone, Zoned};
 
 #[derive(Debug, StructOpt)]
 pub enum PowerOpt {
@@ -54,4 +16,41 @@ pub enum PowerOpt {
 
     /// Queries the power state of the reciever
     Query,
+}
+
+pub struct PowerModule;
+
+impl PowerModule {
+    pub fn parse_command(cmd: &PowerOpt) -> String {
+        let code = PowerModule::get_code(&Zone::Main); // TODO: make zone independent
+
+        match cmd {
+            PowerOpt::On => format!("{}O", &code),
+            PowerOpt::Off => format!("{}F", &code),
+            PowerOpt::Toggle => format!("{}Z", &code),
+            PowerOpt::Query => format!("?{}", &code),
+        }
+    }
+}
+
+impl Module for PowerModule {
+    fn parse_response(&self, code: &str) -> Option<String> {
+        match code {
+            "PWR1" => Some("Power off".into()),
+            "PWR0" => Some("Power on".into()),
+            _ => None,
+        }
+    }
+}
+
+impl Zoned for PowerModule {
+    fn get_code(zone: &Zone) -> String {
+        match zone {
+            Zone::Main => "P",
+            Zone::Zone2 => "AP",
+            Zone::Zone3 => "BP",
+            Zone::HDZone => "ZE",
+        }
+        .to_string()
+    }
 }

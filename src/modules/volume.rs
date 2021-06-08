@@ -1,7 +1,15 @@
-use super::super::log;
-use super::Opt;
-use super::{Module, Modules};
+use structopt::StructOpt;
+
+use super::Module;
 use super::{Zone, Zoned};
+
+#[derive(Debug, StructOpt)]
+pub enum VolumeOpt {
+    Up,
+    Down,
+    Set { volume: i8 },
+    Query,
+}
 
 pub struct VolumeModule;
 
@@ -28,42 +36,46 @@ impl VolumeModule {
             0
         }
     }
+
+    pub fn parse_command(cmd: &VolumeOpt) -> String {
+        let code = VolumeModule::get_code(&Zone::Main); // TODO: make zone independent
+
+        match cmd {
+            VolumeOpt::Up => format!("{}U", &code),
+            VolumeOpt::Down => format!("{}D", &code),
+            VolumeOpt::Set { volume } => match Zone::Main {
+                Zone::Main => {
+                    // let volume =
+                    //     VolumeModule::translate_volume(cmd.get(2).unwrap().parse::<f32>().unwrap());
+                    format!(
+                        "{:0>3}{}L",
+                        VolumeModule::translate_volume(volume.clone().into()),
+                        &code
+                    )
+                }
+
+                _ => {
+                    // let volume = VolumeModule::translate_volume_zoned(
+                    //     cmd.get(2).unwrap().parse::<f32>().unwrap(),
+                    // );
+                    format!(
+                        "{:0>2}{}",
+                        VolumeModule::translate_volume_zoned(volume.clone().into()),
+                        &code
+                    )
+                }
+            },
+            VolumeOpt::Query => format!("?{}", &code),
+        }
+    }
 }
 
 impl Module for VolumeModule {
-    fn parse_command(opt: &Opt) -> String {
-        let code = VolumeModule::get_code(&opt.zone);
-
-        match opt.cmd {
-            Some(Modules::Volume(VolumeOpt::Up)) => format!("{}U", &code),
-            Some(Modules::Volume(VolumeOpt::Down)) => format!("{}D", &code),
-            // TODO
-            // There is a way to get the volume from opt, but I don't feel like looking it up right
-            // now
-            // "set" => match zone {
-            //     Zone::Main => {
-            //         let volume =
-            //             VolumeModule::translate_volume(cmd.get(2).unwrap().parse::<f32>().unwrap());
-            //         Some(format!("{:0>3}{}L", volume, &code))
-            //     }
-            //
-            //     _ => {
-            //         let volume = VolumeModule::translate_volume_zoned(
-            //             cmd.get(2).unwrap().parse::<f32>().unwrap(),
-            //         );
-            //         Some(format!("{:0>2}{}", volume, &code))
-            //     }
-            // },
-            Some(Modules::Volume(VolumeOpt::Query)) => format!("?{}", &code),
-            _ => format!("?{}", &code),
-        }
-    }
-
-    fn on_response(&self, code: &str) {
+    fn parse_response(&self, code: &str) -> Option<String> {
         match code {
-            "VU" => log("Volume up"),
-            "VD" => log("Volume down"),
-            _ => (),
+            "VU" => Some("Volume up".into()),
+            "VD" => Some("Volume down".into()),
+            _ => None,
         }
     }
 }
@@ -78,14 +90,4 @@ impl Zoned for VolumeModule {
         }
         .to_string()
     }
-}
-
-use structopt::StructOpt;
-
-#[derive(Debug, StructOpt)]
-pub enum VolumeOpt {
-    Up,
-    Down,
-    Set { volume: i8 },
-    Query,
 }

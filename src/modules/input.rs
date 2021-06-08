@@ -1,7 +1,15 @@
-use super::super::log;
-use super::Opt;
-use super::{Module, Modules};
+use structopt::StructOpt;
+
+use super::Module;
 use super::{Zone, Zoned};
+
+#[derive(Debug, StructOpt)]
+pub enum InputOpt {
+    Next,
+    Prev,
+    Set { source: String },
+    Query,
+}
 
 pub struct InputModule;
 
@@ -69,41 +77,37 @@ impl InputModule {
             }
         )
     }
+
+    pub fn parse_command(cmd: &InputOpt) -> String {
+        let code = InputModule::get_code(&Zone::Main);
+
+        match cmd {
+            InputOpt::Next => format!("{}U", code),
+            InputOpt::Prev => format!("{}D", code),
+            InputOpt::Set { source } => match Zone::Main {
+                Zone::Main => {
+                    let source = InputModule::match_source(source);
+                    format!("{}{}N", source, code)
+                }
+                Zone::HDZone => {
+                    let source = InputModule::match_source_zoned(source);
+                    format!("{}{}A", source, code)
+                }
+                _ => {
+                    let source = InputModule::match_source_zoned(source);
+                    format!("{}{}", source, code)
+                }
+            },
+            InputOpt::Query => format!("?{}", &code),
+        }
+    }
 }
 
 impl Module for InputModule {
-    fn parse_command(opt: &Opt) -> String {
-        let code = InputModule::get_code(&opt.zone);
-
-        match opt.cmd {
-            Some(Modules::Input(InputOpt::Next)) => format!("{}U", code),
-            Some(Modules::Input(InputOpt::Prev)) => format!("{}D", code),
-            // TODO
-            // Some(Modules::Input(InputOpt::Set { .. })) => match &opt.zone {
-            //     Zone::Main => {
-            //         let source = InputModule::match_source(opt.cmd.unwrap().);
-            //
-            //         format!("{}{}N", source, code)
-            //     }
-            //     Zone::HDZone => {
-            //         let source = InputModule::match_source_zoned(cmd.get(2).unwrap().as_str());
-            //
-            //         format!("{}{}A", source, code)
-            //     }
-            //     _ => {
-            //         let source = InputModule::match_source_zoned(cmd.get(2).unwrap().as_str());
-            //
-            //         format!("{}{}", source, code)
-            //     }
-            // },
-            Some(Modules::Input(InputOpt::Query)) => format!("?{}", &code),
-            _ => format!("?{}", &code),
-        }
-    }
-
-    fn on_response(&self, code: &str) {
+    fn parse_response(&self, code: &str) -> Option<String> {
         match code {
-            _ => (),
+            // TODO: Implement this
+            _ => None,
         }
     }
 }
@@ -118,14 +122,4 @@ impl Zoned for InputModule {
         }
         .to_string()
     }
-}
-
-use structopt::StructOpt;
-
-#[derive(Debug, StructOpt)]
-pub enum InputOpt {
-    Next,
-    Prev,
-    Set { source: String },
-    Query,
 }

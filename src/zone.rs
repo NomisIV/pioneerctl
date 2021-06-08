@@ -8,6 +8,7 @@ pub enum Zone {
     HDZone,
 }
 
+// TODO: Change to implement FromStr instead
 pub fn match_zone(args: &mut Vec<String>) -> (Zone, Vec<String>) {
     match args.get(0).unwrap().as_str() {
         "zone2" => (Zone::Zone2, args.drain(1..).collect()),

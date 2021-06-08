@@ -9,5 +9,6 @@ edition = "2018"
 [dependencies]
 structopt = "0.3" # For commandline interface
 rustyline = "8.0" # For readline?
-toml_edit = "0.2"
+colored = "2.0" # For colored prompt
+die-exit = "0.3" # "Error handling"
 

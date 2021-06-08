@@ -6,15 +6,16 @@ mod volume;
 use super::zone::Zone;
 
 pub trait Module {
-    fn parse_command(opt: &Opt) -> String;
-    fn on_response(&self, code: &str);
+    // I want to use this, but I want to be able to specify the module's own
+    // opt instead of a generic opt as parameter
+    // fn parse_command(cmd: &Modules) -> String;
+    fn parse_response(&self, code: &str) -> Option<String>;
 }
 
 trait Zoned {
     fn get_code(zone: &Zone) -> String;
 }
 
-use super::Opt;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -25,12 +26,11 @@ pub enum Modules {
     Input(input::InputOpt),
 }
 
-pub fn parse_command(opt: &Opt) -> Option<String> {
-    match opt.cmd {
-        Some(Modules::Power(..)) => Some(power::PowerModule::parse_command(opt)),
-        Some(Modules::Input(..)) => Some(input::InputModule::parse_command(opt)),
-        Some(Modules::Mute(..)) => Some(mute::MuteModule::parse_command(opt)),
-        Some(Modules::Volume(..)) => Some(volume::VolumeModule::parse_command(opt)),
-        _ => None,
+pub fn parse_command(cmd: &Modules) -> String {
+    match cmd {
+        Modules::Power(power_command) => power::PowerModule::parse_command(power_command),
+        Modules::Volume(volume_command) => volume::VolumeModule::parse_command(volume_command),
+        Modules::Input(input_command) => input::InputModule::parse_command(input_command),
+        Modules::Mute(mute_command) => mute::MuteModule::parse_command(mute_command),
     }
 }

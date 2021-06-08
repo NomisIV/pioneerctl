@@ -40,7 +40,7 @@ and thanks to structopt, the `--help`-pages are basically all the documentation 
 Here are some examples:
 
 ```
-$ pioneerctl power on
+$ PIONEERCTL_ADDRESS="192.168.1.3:8102" pioneerctl power on
 (The reciever turns on)
 
 $ pioneerctl --ip-address "192.168.1.3:8102" volume up
@@ -48,16 +48,25 @@ $ pioneerctl --ip-address "192.168.1.3:8102" volume up
 
 $ pioneerctl --zone zone2 mute on
 (Mute only zone2)
+
+# Assuming PIONEERCTL_ADDRESS is already an exported variable
+$ pioneerctl
+pioneerctl $
+(Enter REPL mode)
 ```
 
-If an ip-address isn't specified in the command, a configuration file must be used.
-It is expected to be located at `$XDG_CONFIG_HOME/pioneerctl/config.toml`,
-but this can be overridden with the `--config` flag.
+The IP address of the reciever must either be supplied with the `--ip-address` flag,
+or via environment the environment variable `PIONEERCTL_ADDRESS`.
+Note that the environment variable can be exported in your shell's profile,
+to not have to set it twice.
+
+If no command is supplied pioneerctl will enter REPL mode.
+In there you can run multiple commands after each other without setting up a new connection with each command.
 
 ### Building
 
-This is still very much in alpha, and I haven't developed a release plan yet.
-But since it's a rust project, in theory it's as simple as
+This is still very much in alpha, and I haven't released this to [crates.io](https://crates.io) yet.
+But you can always build it yourself, like this:
 
 ```
 git clone https://github.com/NomisIV/pioneerctl
@@ -68,7 +77,8 @@ sudo cp target/release/pioneerctl /bin/pioneerctl
 
 However, this requires you to have a working cargo environment.
 
-In the future I will probably publish binaries with each update.
+In the future I will publish binaries with each release on GitHub,
+in addition to uploading it as a crate to [crates.io](https://crates.io)
 
 ## Contributing
 
