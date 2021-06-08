@@ -63,22 +63,15 @@ to not have to set it twice.
 If no command is supplied pioneerctl will enter REPL mode.
 In there you can run multiple commands after each other without setting up a new connection with each command.
 
-### Building
+### Installing / Building
 
-This is still very much in alpha, and I haven't released this to [crates.io](https://crates.io) yet.
-But you can always build it yourself, like this:
+If you have a working cargo environment it's as simple as
 
 ```
-git clone https://github.com/NomisIV/pioneerctl
-cd pioneerctl
-cargo build --release
-sudo cp target/release/pioneerctl /bin/pioneerctl
+$ cargo install pioneerctl
 ```
 
-However, this requires you to have a working cargo environment.
-
-In the future I will publish binaries with each release on GitHub,
-in addition to uploading it as a crate to [crates.io](https://crates.io)
+But if you don't, there is a precompiled binary in the GitHub release.
 
 ## Contributing
 
