@@ -1,10 +1,11 @@
 [package]
 name = "pioneerctl"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["NomisIV <simon@nomisiv.com>"]
 edition = "2018"
 description = "A remote control for certain Pioneer recievers"
 repository = "https://github.com/NomisIV/pioneerctl/"
+readme = "README.md"
 license = "GPL-3.0-or-later"
 keywords = [ "pioneer", "cli", "reciever", "remote-control" ]
 categories = [ "command-line-utilities", "hardware-support" ]
