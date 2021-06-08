@@ -47,7 +47,7 @@ impl InputModule {
                 "hdmi" => 31,      // HDMI (cyclic)
                 "airplay" => 46,   // Information only
                 "dmr" => 47,       // Information only
-                _ => 99,
+                _ => 99, // ERROR
             }
         )
     }
@@ -73,7 +73,7 @@ impl InputModule {
                 "bluetooth" => 33, // BT AUDIO
                 "airplay" => 46,   // Information only
                 "dmr" => 47,       // Information only
-                _ => 99,
+                _ => 99, // ERROR
             }
         )
     }

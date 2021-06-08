@@ -71,11 +71,6 @@ fn main() {
 
     // Enter REPL-interface
     let mut rl = Editor::<()>::new();
-    let history_path = PathBuf::from("/home/simon/.local/share/pioneerctl/history"); // FIXME: change path
-
-    if rl.load_history(&history_path).is_err() {
-        // TODO: Create history file
-    }
 
     loop {
         // Read
@@ -86,9 +81,6 @@ fn main() {
                     "" => continue,
                     "exit" => break,
                     _ => {
-                        // Add the line to the history
-                        rl.add_history_entry(line.as_str());
-
                         // Split the line at whitespace
                         let mut module_vec = line.split(" ").collect::<Vec<&str>>();
 
@@ -123,5 +115,4 @@ fn main() {
             }
         }
     }
-    //rl.save_history(&history_path).unwrap() // FIXME
 }

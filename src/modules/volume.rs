@@ -21,7 +21,7 @@ impl VolumeModule {
         if vol >= min_vol && vol <= max_vol {
             ((vol - min_vol) / step) as u8 + 1
         } else {
-            0
+            0 // ERROR
         }
     }
 
@@ -33,7 +33,7 @@ impl VolumeModule {
         if vol >= min_vol && vol <= max_vol {
             ((vol - min_vol) / step) as u8 + 1
         } else {
-            0
+            0 // ERROR
         }
     }
 
@@ -45,8 +45,6 @@ impl VolumeModule {
             VolumeOpt::Down => format!("{}D", &code),
             VolumeOpt::Set { volume } => match Zone::Main {
                 Zone::Main => {
-                    // let volume =
-                    //     VolumeModule::translate_volume(cmd.get(2).unwrap().parse::<f32>().unwrap());
                     format!(
                         "{:0>3}{}L",
                         VolumeModule::translate_volume(volume.clone().into()),
@@ -55,9 +53,6 @@ impl VolumeModule {
                 }
 
                 _ => {
-                    // let volume = VolumeModule::translate_volume_zoned(
-                    //     cmd.get(2).unwrap().parse::<f32>().unwrap(),
-                    // );
                     format!(
                         "{:0>2}{}",
                         VolumeModule::translate_volume_zoned(volume.clone().into()),
