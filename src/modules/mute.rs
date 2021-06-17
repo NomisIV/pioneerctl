@@ -21,8 +21,8 @@ pub enum MuteOpt {
 pub struct MuteModule;
 
 impl MuteModule {
-    pub fn parse_command(cmd: &MuteOpt) -> String {
-        let code = MuteModule::get_code(&Zone::Main);
+    pub fn parse_command(cmd: &MuteOpt, zone: &Zone) -> String {
+        let code = MuteModule::get_code(zone);
 
         match cmd {
             MuteOpt::On => format!("{}O", &code),

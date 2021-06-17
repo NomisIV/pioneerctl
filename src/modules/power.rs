@@ -21,8 +21,8 @@ pub enum PowerOpt {
 pub struct PowerModule;
 
 impl PowerModule {
-    pub fn parse_command(cmd: &PowerOpt) -> String {
-        let code = PowerModule::get_code(&Zone::Main); // TODO: make zone independent
+    pub fn parse_command(cmd: &PowerOpt, zone: &Zone) -> String {
+        let code = PowerModule::get_code(zone);
 
         match cmd {
             PowerOpt::On => format!("{}O", &code),

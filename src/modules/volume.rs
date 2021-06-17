@@ -41,13 +41,13 @@ impl VolumeModule {
         }
     }
 
-    pub fn parse_command(cmd: &VolumeOpt) -> String {
-        let code = VolumeModule::get_code(&Zone::Main); // TODO: make zone independent
+    pub fn parse_command(cmd: &VolumeOpt, zone: &Zone) -> String {
+        let code = VolumeModule::get_code(zone);
 
         match cmd {
             VolumeOpt::Up => format!("{}U", &code),
             VolumeOpt::Down => format!("{}D", &code),
-            VolumeOpt::Set { volume } => match Zone::Main {
+            VolumeOpt::Set { volume } => match zone {
                 Zone::Main => {
                     format!(
                         "{:0>3}{}L",

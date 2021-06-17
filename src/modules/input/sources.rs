@@ -5,6 +5,10 @@ pub trait ToCode {
     fn to_code(&self) -> u8;
 }
 
+pub trait ToZonedSource {
+    fn to_zoned(&self) -> Result<SourcesZoned, Error>; // TODO: Make it work with into()
+}
+
 #[derive(Debug)]
 pub enum Sources {
     BD,
@@ -73,7 +77,7 @@ impl FromStr for Sources {
             _ => Err(Error {
                 message: format!("{} is not an input source", s),
                 kind: structopt::clap::ErrorKind::InvalidValue,
-                info: None,
+                info: None, // TODO
             }),
         }
     }
@@ -110,6 +114,36 @@ impl ToCode for Sources {
             Self::HDMI => 31,
             Self::Airplay => 46,
             Self::DMR => 47,
+        }
+    }
+}
+
+impl ToZonedSource for Sources {
+    fn to_zoned(&self) -> Result<SourcesZoned, Error> {
+        match self {
+            // TODO: Macro this
+            Self::DVD => Ok(SourcesZoned::DVD),
+            Self::SatCbl => Ok(SourcesZoned::SatCbl),
+            Self::DvrBdr => Ok(SourcesZoned::DvrBdr),
+            Self::Network => Ok(SourcesZoned::Network),
+            Self::InternetRadio => Ok(SourcesZoned::InternetRadio),
+            Self::Spotify => Ok(SourcesZoned::Spotify),
+            Self::Pandora => Ok(SourcesZoned::Pandora),
+            Self::MediaServer => Ok(SourcesZoned::MediaServer),
+            Self::Favorites => Ok(SourcesZoned::Favorites),
+            Self::IpodUsb => Ok(SourcesZoned::IpodUsb),
+            Self::TV => Ok(SourcesZoned::TV),
+            Self::CD => Ok(SourcesZoned::CD),
+            Self::UsbDac => Ok(SourcesZoned::UsbDac),
+            Self::Tuner => Ok(SourcesZoned::Tuner),
+            Self::Bluetooth => Ok(SourcesZoned::Bluetooth),
+            Self::Airplay => Ok(SourcesZoned::Airplay),
+            Self::DMR => Ok(SourcesZoned::DMR),
+            _ => Err(Error {
+                message: format!("{:#?} is not a zoned input source", self),
+                kind: structopt::clap::ErrorKind::InvalidValue,
+                info: None,
+            }),
         }
     }
 }

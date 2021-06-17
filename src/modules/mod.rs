@@ -9,6 +9,7 @@ pub trait Module {
     // I want to use this, but I want to be able to specify the module's own
     // opt instead of a generic opt as parameter
     // fn parse_command(cmd: &Modules) -> String;
+
     fn parse_response(&self, code: &str) -> Option<String>;
 }
 
@@ -26,11 +27,13 @@ pub enum Modules {
     Input(input::InputOpt),
 }
 
-pub fn parse_command(cmd: &Modules) -> String {
+pub fn parse_command(cmd: &Modules, zone: &Zone) -> String {
     match cmd {
-        Modules::Power(power_command) => power::PowerModule::parse_command(power_command),
-        Modules::Volume(volume_command) => volume::VolumeModule::parse_command(volume_command),
-        Modules::Input(input_command) => input::InputModule::parse_command(input_command),
-        Modules::Mute(mute_command) => mute::MuteModule::parse_command(mute_command),
+        Modules::Power(power_command) => power::PowerModule::parse_command(power_command, zone),
+        Modules::Volume(volume_command) => {
+            volume::VolumeModule::parse_command(volume_command, zone)
+        }
+        Modules::Input(input_command) => input::InputModule::parse_command(input_command, zone),
+        Modules::Mute(mute_command) => mute::MuteModule::parse_command(mute_command, zone),
     }
 }

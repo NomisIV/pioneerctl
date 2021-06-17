@@ -5,11 +5,12 @@ use std::{
     io::{prelude::*, BufReader},
     net::TcpStream,
     process::exit,
+    str::FromStr,
 };
 use structopt::StructOpt;
 
 mod zone;
-// use zone::Zone;
+use zone::Zone;
 
 mod modules;
 use modules::{parse_command, Modules};
@@ -27,6 +28,10 @@ pub struct Opt {
     /// IP address (overrides config)
     #[structopt(short = "a", long, env = "PIONEERCTL_ADDRESS")]
     ip_address: Option<String>,
+
+    /// Zone
+    #[structopt(short, long, default_value = "main")]
+    zone: Zone,
 
     #[structopt(subcommand)]
     cmd: Option<Modules>,
@@ -49,7 +54,7 @@ fn main() {
     // Command supplied, execute it
     if opt.cmd.is_some() {
         // Parse command
-        let code = parse_command(&opt.cmd.unwrap());
+        let code = parse_command(&opt.cmd.unwrap(), &opt.zone);
 
         // Send command
         send_code(&mut stream, &code);
@@ -75,34 +80,11 @@ fn main() {
         // Read
         let readline = rl.readline(&format!("{} $ ", "pioneerctl".bold().purple()));
         match readline {
-            Ok(line) => {
-                match line.as_str() {
-                    "" => continue,
-                    "exit" => break,
-                    _ => {
-                        // Split the line at whitespace
-                        let mut module_vec = line.split(" ").collect::<Vec<&str>>();
-
-                        // The first word is supposed to be the program
-                        module_vec.insert(0, "pioneerctl");
-
-                        // Generate the command with structopt
-                        let cmd = Modules::from_iter_safe(module_vec);
-
-                        if cmd.is_err() {
-                            println!("\n{}\n", cmd.unwrap_err().message);
-                            continue;
-                        }
-
-                        // Get the code for the current command
-                        let code = parse_command(&cmd.unwrap());
-
-                        send_code(&mut stream, &code);
-
-                        // TODO: Print response
-                    }
-                }
-            }
+            Ok(line) => match line.as_str() {
+                "" => continue,
+                "exit" => break,
+                _ => parse_repl(&mut stream, line),
+            },
 
             Err(ReadlineError::Interrupted) => break,
 
@@ -114,4 +96,36 @@ fn main() {
             }
         }
     }
+}
+
+fn parse_repl(stream: &mut TcpStream, line: String) {
+    // Split the line at whitespace
+    let mut input_vec = line.split(" ").collect::<Vec<&str>>();
+
+    // Parse for zone
+    let (mut module_vec, zone) = match Zone::from_str(input_vec.get(0).unwrap()) {
+        Ok(zone) => {
+            input_vec.remove(0);
+            (input_vec, zone)
+        }
+        Err(..) => (input_vec, Zone::Main),
+    };
+
+    // The first word is supposed to be the program
+    module_vec.insert(0, "pioneerctl");
+
+    // Generate the command with structopt
+    let cmd = Modules::from_iter_safe(module_vec);
+
+    if cmd.is_err() {
+        println!("\n{}\n", cmd.unwrap_err().message);
+        return;
+    }
+
+    // Get the code for the current command
+    let code = parse_command(&cmd.unwrap(), &zone);
+
+    send_code(stream, &code);
+
+    // TODO: Print response
 }
