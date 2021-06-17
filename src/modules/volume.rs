@@ -1,4 +1,5 @@
 use structopt::StructOpt;
+use structopt::clap::AppSettings;
 
 use super::Module;
 use super::{Zone, Zoned};
@@ -7,6 +8,7 @@ use super::{Zone, Zoned};
 pub enum VolumeOpt {
     Up,
     Down,
+    #[structopt(alias = "edit", setting = AppSettings::AllowNegativeNumbers)]
     Set { volume: i8 },
     Query,
 }
