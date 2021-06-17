@@ -4,7 +4,6 @@ use rustyline::{error::ReadlineError, Editor};
 use std::{
     io::{prelude::*, BufReader},
     net::TcpStream,
-    path::PathBuf,
     process::exit,
 };
 use structopt::StructOpt;
