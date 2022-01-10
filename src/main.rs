@@ -1,104 +1,42 @@
 use colored::*;
 use die_exit::*;
 use rustyline::{error::ReadlineError, Editor};
-use std::{
-    io::{prelude::*, BufReader},
-    net::TcpStream,
-    process::exit,
-    str::FromStr,
-};
 use structopt::StructOpt;
 
+use std::io;
+use std::process::exit;
+use std::str::FromStr;
+
+mod connection;
+mod modules;
+mod opt;
 mod zone;
+
+use connection::{connect, SocketConnection};
+use modules::{parse_command, Modules, ParseCommandError};
+use opt::Opt;
 use zone::Zone;
 
-mod modules;
-use modules::{parse_command, Modules};
-
-#[derive(Debug, StructOpt)]
-pub struct Opt {
-    /// Activate debug mode
-    #[structopt(short, long)]
-    debug: bool,
-
-    /// Don't print reciever on_response
-    #[structopt(short, long)]
-    silent: bool,
-
-    /// IP address (overrides config)
-    #[structopt(short = "a", long, env = "PIONEERCTL_ADDRESS")]
-    ip_address: Option<String>,
-
-    /// Zone
-    #[structopt(short, long, default_value = "main")]
-    zone: Zone,
-
-    #[structopt(subcommand)]
-    cmd: Option<Modules>,
-}
-
-fn send_code(stream: &mut TcpStream, code: &str) {
-    stream
-        .write(format!("{}\r\n", code).as_bytes())
-        .die("Expected to send the command successfully");
-}
-
-fn main() {
-    // Read command line arguments
-    let opt = Opt::from_args();
-
-    // Set up connection
-    let mut stream = TcpStream::connect(&opt.ip_address.die("No IP address configured"))
-        .die("Could not connect to the reciever");
-
-    // Command supplied, execute it
-    if opt.cmd.is_some() {
-        // Parse command
-        let code = parse_command(&opt.cmd.unwrap(), &opt.zone);
-
-        // Send command
-        send_code(&mut stream, &code);
-
-        // Print response
-        // TODO: Parse response
-        loop {
-            let mut data = Vec::new();
-            BufReader::new(&stream)
-                .read_until(b'\r', &mut data)
-                .die("Could not listen");
-            println!("{}", String::from_utf8_lossy(&data));
+fn parse_direct_command(opt: &Opt, con: &mut Box<dyn SocketConnection>, cmd: &Modules) {
+    // Parse command
+    let command = match parse_command(&cmd, &opt.zone) {
+        Ok(cmd) => cmd,
+        Err(e) => {
+            eprintln!("{}", e);
+            return;
         }
+    };
 
-        // Do nothing more
-        // return;
-    }
+    // Send command
+    con.send(&command).unwrap();
 
-    // Enter REPL-interface
-    let mut rl = Editor::<()>::new();
-
-    loop {
-        // Read
-        let readline = rl.readline(&format!("{} $ ", "pioneerctl".bold().purple()));
-        match readline {
-            Ok(line) => match line.as_str() {
-                "" => continue,
-                "exit" => break,
-                _ => parse_repl(&mut stream, line),
-            },
-
-            Err(ReadlineError::Interrupted) => break,
-
-            Err(ReadlineError::Eof) => break,
-
-            Err(err) => {
-                println!("REPL ERROR: {:?}", err);
-                exit(1);
-            }
-        }
+    // Print response
+    if opt.listen {
+        con.start_listen();
     }
 }
 
-fn parse_repl(stream: &mut TcpStream, line: String) {
+fn parse_repl_line(con: &mut Box<dyn SocketConnection>, line: String) {
     // Split the line at whitespace
     let mut input_vec = line.split(" ").collect::<Vec<&str>>();
 
@@ -111,21 +49,73 @@ fn parse_repl(stream: &mut TcpStream, line: String) {
         Err(..) => (input_vec, Zone::Main),
     };
 
-    // The first word is supposed to be the program
+    // The first argument is supposed to be the program
     module_vec.insert(0, "pioneerctl");
 
-    // Generate the command with structopt
-    let cmd = Modules::from_iter_safe(module_vec);
+    // Generate the options with structopt
+    match Modules::from_iter_safe(&module_vec) {
+        // If ok, send the command
+        // Ok(cmd) => send_command(stream_maybe, &parse_command(&cmd, &zone)),
+        Ok(cmd) => {
+            con.send(&parse_command(&cmd, &zone).die("Bad cmd"))
+                .expect("Oh no");
+        }
 
-    if cmd.is_err() {
-        println!("\n{}\n", cmd.unwrap_err().message);
-        return;
+        // If bad command, print err
+        Err(err) => println!("\n{}\n", err.message),
+    }
+}
+
+fn repl(opt: &Opt, con: &mut Box<dyn SocketConnection>) {
+    if opt.listen {
+        con.start_listen();
     }
 
-    // Get the code for the current command
-    let code = parse_command(&cmd.unwrap(), &zone);
+    let mut rl = Editor::<()>::new();
 
-    send_code(stream, &code);
+    loop {
+        let readline = rl.readline(&format!("{} $ ", "pioneerctl".bold().purple()));
+        match readline {
+            Ok(line) => match line.as_str() {
+                "" => continue,
+                "exit" => break,
+                _ => parse_repl_line(con, line),
+            },
 
-    // TODO: Print response
+            Err(ReadlineError::Interrupted) => break,
+
+            Err(ReadlineError::Eof) => break,
+
+            Err(err) => {
+                eprintln!("REPL ERROR: {:?}", err);
+                exit(1);
+            }
+        }
+    }
+}
+
+fn main() -> Result<(), ParseCommandError> {
+    // Read command line arguments
+    let opt = Opt::from_args();
+
+    // Generate completions
+    if let Some(shell) = opt.completions {
+        let app = Opt::clap();
+        let app_name = app.get_name();
+        app.clone()
+            .gen_completions_to(app_name, shell, &mut io::stdout());
+        return Ok(());
+    }
+
+    // Set up connection
+    let mut con: Box<dyn SocketConnection> =
+        connect(&opt.ip.clone().die("No IP address configured"), opt.pretend);
+
+    // Check if command is supplied
+    match &opt.cmd {
+        Some(cmd) => parse_direct_command(&opt, &mut con, &cmd),
+        None => repl(&opt, &mut con),
+    }
+
+    Ok(())
 }

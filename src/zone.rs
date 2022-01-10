@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use structopt::clap::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Zone {
     Main,
     Zone2,
@@ -22,7 +22,7 @@ impl FromStr for Zone {
             _ => Err(Error {
                 message: format!("{} is not a zone", s),
                 kind: structopt::clap::ErrorKind::InvalidValue,
-                info: None, // TODO
+                info: Some(vec!["See pioneerctl --help for available zones".into()]),
             }),
         }
     }
