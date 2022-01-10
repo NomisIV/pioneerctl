@@ -1,7 +1,7 @@
 # pioneerctl
 
 This is a command line utility to control older pioneer A/V recievers over the home network.
-The only officially supported recievers so far is the VSX-923, only because it's the only one I own.
+The only officially supported recievers so far is the VSX-923, only because it's the only one that is tested.
 
 This project is inspired by [mkulesh/onpc](https://github.com/mkulesh/onpc),
 and in theory, pioneerctl should be able to support the pioneer models that onpc doesn't.
@@ -23,12 +23,13 @@ If you have an old pioneer reciever, feel free to test pioneerctl and return wit
 
 ## Documentation
 
-Currently only the four most used commands are implemented:
+Currently only the five most used commands are implemented:
 
 - Power
 - Volume
 - Mute
 - Input
+- Listening mode
 
 The goal is to implement almost everything, but it will be taken in small steps.
 
@@ -36,6 +37,8 @@ The goal is to implement almost everything, but it will be taken in small steps.
 
 The syntax is quite self explanatory,
 and thanks to structopt, the `--help`-pages are basically all the documentation you'll ever want.
+The binary includes support for generating shell completions,
+but due to cargo limitations they cannot be installed automatically.
 
 Here are some examples:
 
@@ -43,7 +46,7 @@ Here are some examples:
 $ PIONEERCTL_ADDRESS="192.168.1.3:8102" pioneerctl power on
 (The reciever turns on)
 
-$ pioneerctl --ip-address "192.168.1.3:8102" volume up
+$ pioneerctl --ip "192.168.1.3:8102" volume up
 (Connect to the reciever at the specified address, and increase the volume by one step)
 
 $ pioneerctl --zone zone2 mute on
@@ -55,10 +58,8 @@ pioneerctl $
 (Enter REPL mode)
 ```
 
-The IP address of the reciever must either be supplied with the `--ip-address` flag,
+The IP address of the reciever must either be supplied with the `--ip` flag,
 or via environment the environment variable `PIONEERCTL_ADDRESS`.
-Note that the environment variable can be exported in your shell's profile,
-to not have to set it twice.
 
 If no command is supplied pioneerctl will enter REPL mode.
 In there you can run multiple commands after each other without setting up a new connection with each command.
